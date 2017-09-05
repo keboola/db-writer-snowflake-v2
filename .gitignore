@@ -4,7 +4,6 @@
 nbproject
 .idea
 composer.phar
-composer.lock
 vendor
 set-env.sh
 snowflake_linux_x8664_odbc.tgz
