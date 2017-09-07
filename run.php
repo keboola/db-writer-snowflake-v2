@@ -51,9 +51,8 @@ try {
     // app init
     if (isset($config['parameters']['workspaceId'])) {
         $app = new Application\Workspace($client, $logger);
-//   @TODO implement
-//    } elseif (isset($config['parameters']['db'])) {
-//        $app = new Application\Connect($client, $logger);
+    } elseif (isset($config['parameters']['db'])) {
+        $app = new Application\Connect($client, $logger);
     } else {
         throw new UserException("Unsupported configuration. Missing 'workspaceId' or 'db' parameters");
     }
