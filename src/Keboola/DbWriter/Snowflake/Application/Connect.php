@@ -2,10 +2,12 @@
 namespace Keboola\DbWriter\Snowflake\Application;
 
 use Keboola\Csv\CsvFile;
+use Keboola\DbWriter\Exception\ApplicationException;
 use Keboola\DbWriter\Exception\UserException;
 use Keboola\DbWriter\Logger;
 use Keboola\DbWriter\Snowflake\Configuration\ConnectDefinition;
 use Keboola\DbWriter\Snowflake\Configuration\WorkspaceDefinition;
+use Keboola\DbWriter\Snowflake\Exception;
 use Keboola\DbWriter\Snowflake\Writer;
 use Keboola\StorageApi\Client;
 use Keboola\StorageApi\ClientException;
@@ -14,16 +16,9 @@ use Symfony\Component\Yaml\Yaml;
 
 class Connect extends Base
 {
-    private $writer;
-
     public function __construct(Client $sapiClient, Logger $logger)
     {
         parent::__construct($sapiClient, $logger, new ConnectDefinition());
-    }
-
-    private function initWriter($params)
-    {
-        $this->writer = new Writer($params['db'], $this->logger);
     }
 
     protected function testConnectionAction(array $config)
@@ -40,27 +35,23 @@ class Connect extends Base
         ]);
     }
 
-    protected function testWorkspaceAction(array $config)
-    {
-        // TODO: Implement testWorkspaceAction() method.
-    }
-
     protected function runAction(array $config)
     {
+        $dataDir = new \SplFileInfo($config['data_dir'] . "/in/tables/");
+
         $uploaded = [];
-        $tables = array_filter($this['parameters']['tables'], function ($table) {
+        $tables = array_filter($config['tables'], function ($table) {
             return ($table['export']);
         });
 
-        /** @var Writer $writer */
-        $writer = $this['writer'];
+        $writer = new Writer($config['db'], $this->logger);
         foreach ($tables as $table) {
             if (!$writer->isTableValid($table)) {
                 continue;
             }
-            var_dump($table);
-            $manifest = $this->getManifest($table['tableId']);
-            var_dump($manifest);
+
+            $manifest = $this->getManifest($table['tableId'], $dataDir);
+
             $targetTableName = $table['dbName'];
             if ($table['incremental']) {
                 $table['dbName'] = $writer->generateTmpName($table['dbName']);
@@ -103,19 +94,19 @@ class Connect extends Base
         ];
     }
 
-    private function getManifest($tableId)
+    private function getManifest($tableId, \SplFileInfo $directory)
     {
         return (new Yaml())->parse(
             file_get_contents(
-                $this['parameters']['data_dir'] . "/in/tables/" . $tableId . ".csv.manifest"
+                $directory . '/' . $tableId . ".csv.manifest"
             )
         );
     }
 
-    protected function reorderColumns(CsvFile $file, $items)
+    protected function reorderColumns($columns, $items)
     {
         $reordered = [];
-        foreach ($file->getHeader() as $manifestCol) {
+        foreach ($columns as $manifestCol) {
             foreach ($items as $item) {
                 if ($manifestCol == $item['name']) {
                     $reordered[] = $item;
@@ -125,22 +116,16 @@ class Connect extends Base
         return $reordered;
     }
 
-    public function writeFull($csv, $tableConfig)
+    public function writeFull($csv, $tableConfig, Writer $writer)
     {
-        /** @var WriterInterface $writer */
-        $writer = $this['writer'];
-
         $writer->drop($tableConfig['dbName']);
         $writer->create($tableConfig);
         $writer->write($csv, $tableConfig);
     }
 
 
-    public function writeIncremental($csv, $tableConfig)
+    public function writeIncremental($csv, $tableConfig, Writer $writer)
     {
-        /** @var WriterInterface $writer */
-        $writer = $this['writer'];
-
         // write to staging table
         $stageTable = $tableConfig;
         $stageTable['dbName'] = $writer->generateTmpName($tableConfig['dbName']);
@@ -160,8 +145,8 @@ class Connect extends Base
         $writer->upsert($stageTable, $tableConfig['dbName']);
     }
 
-    protected function getInputCsv($tableId)
+    protected function getInputCsv($tableId, \SplFileInfo $directory)
     {
-        return new CsvFile($this['parameters']['data_dir'] . "/in/tables/" . $tableId . ".csv");
+        return new CsvFile($directory . '/' . $tableId . ".csv");
     }
 }
