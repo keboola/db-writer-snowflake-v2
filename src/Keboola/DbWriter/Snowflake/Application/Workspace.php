@@ -30,21 +30,6 @@ class Workspace extends Base
         ];
     }
 
-    protected function testWorkspaceAction(array $params)
-    {
-        $workspaces = new Workspaces($this->sapiClient);
-
-        try {
-            $workspaces->getWorkspace($params['workspaceId']);
-        } catch (ClientException $e) {
-            throw new UserException($e->getMessage());
-        }
-
-        return [
-            'status' => 'success',
-        ];
-    }
-
     protected function runAction(array $params)
     {
         $workspaces = new Workspaces($this->sapiClient);
@@ -85,7 +70,7 @@ class Workspace extends Base
                 $hovno = $workspaces->loadWorkspaceData($params['workspaceId'], $options);
                 var_dump($hovno);
             } catch (ClientException $e) {
-                //@TODO error code beeter conversion
+                //@TODO error code better conversion
                 throw new UserException($e->getMessage());
             }
 

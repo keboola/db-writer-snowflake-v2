@@ -49,7 +49,5 @@ abstract class Base implements IApplication
 
     abstract protected function testConnectionAction(array $config);
 
-    abstract protected function testWorkspaceAction(array $config);
-
     abstract protected function runAction(array $config);
 }
