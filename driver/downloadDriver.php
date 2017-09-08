@@ -22,6 +22,6 @@ $client =  new \Aws\S3\S3Client([
 
 $client->getObject([
     'Bucket' => 'keboola-configs',
-    'Key' => 'drivers/snowflake/snowflake-odbc-2.13.8.x86_64.deb',
-    'SaveAs' => './snowflake-odbc.deb'
+    'Key' => 'drivers/snowflake/snowflake_linux_x8664_odbc.2.12.88.tgz',
+    'SaveAs' => './snowflake_linux_x8664_odbc.tgz'
 ]);
