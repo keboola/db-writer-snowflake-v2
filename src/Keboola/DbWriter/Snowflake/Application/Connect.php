@@ -2,16 +2,12 @@
 namespace Keboola\DbWriter\Snowflake\Application;
 
 use Keboola\Csv\CsvFile;
-use Keboola\DbWriter\Exception\ApplicationException;
-use Keboola\DbWriter\Exception\UserException;
-use Keboola\DbWriter\Logger;
 use Keboola\DbWriter\Snowflake\Configuration\ConnectDefinition;
-use Keboola\DbWriter\Snowflake\Configuration\WorkspaceDefinition;
-use Keboola\DbWriter\Snowflake\Exception;
+use Keboola\DbWriter\Snowflake\Exception\UserException;
+use Keboola\DbWriter\Snowflake\Exception\ApplicationException;
+use Keboola\DbWriter\Snowflake\Logger\Logger;
 use Keboola\DbWriter\Snowflake\Writer;
 use Keboola\StorageApi\Client;
-use Keboola\StorageApi\ClientException;
-use Keboola\StorageApi\Workspaces;
 use Symfony\Component\Yaml\Yaml;
 
 class Connect extends Base
@@ -47,6 +43,8 @@ class Connect extends Base
         $writer = new Writer($config['db'], $this->logger);
         foreach ($tables as $table) {
             if (!$writer->isTableValid($table)) {
+                //@TODO log reason for skipping
+                $this->logger->info("skipped due bad table");
                 continue;
             }
 
@@ -59,6 +57,8 @@ class Connect extends Base
             $table['items'] = $this->reorderColumns($manifest['columns'], $table['items']);
 
             if (empty($table['items'])) {
+                //@TODO log reason for skipping
+                $this->logger->info("skipped due any columns");
                 continue;
             }
 
@@ -77,8 +77,6 @@ class Connect extends Base
                     }
                     $writer->upsert($table, $targetTableName);
                 }
-            } catch (Exception $e) {
-                throw new UserException($e->getMessage(), 0, $e, ["trace" => $e->getTraceAsString()]);
             } catch (UserException $e) {
                 throw $e;
             } catch (\Exception $e) {

@@ -1,9 +1,9 @@
 <?php
 namespace Keboola\DbWriter\Snowflake\Application;
 
-use Keboola\DbWriter\Exception\UserException;
-use Keboola\DbWriter\Logger;
 use Keboola\DbWriter\Snowflake\Configuration\WorkspaceDefinition;
+use Keboola\DbWriter\Snowflake\Exception\UserException;
+use Keboola\DbWriter\Snowflake\Logger\Logger;
 use Keboola\StorageApi\Client;
 use Keboola\StorageApi\ClientException;
 use Keboola\StorageApi\Workspaces;

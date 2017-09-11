@@ -8,6 +8,8 @@
 
 namespace Keboola\DbWriter\Snowflake;
 
+use Keboola\DbWriter\Snowflake\Exception\UserException;
+
 class Connection
 {
     /**
@@ -29,7 +31,7 @@ class Connection
      * - queryTimeout (int) - Specifies how long to wait for a query to complete before returning an error. Zero (0) indicates to wait indefinitely.
      *
      * @param array $options
-     * @throws Exception
+     * @throws UserException
      */
     public function __construct(array $options)
     {
@@ -43,7 +45,7 @@ class Connection
 
         $missingOptions = array_diff($requiredOptions, array_keys($options));
         if (!empty($missingOptions)) {
-            throw new Exception('Missing options: ' . implode(', ', $missingOptions));
+            throw new UserException('Missing options: ' . implode(', ', $missingOptions));
         }
 
         $port = isset($options['port']) ? (int) $options['port'] : 443;
@@ -82,10 +84,10 @@ class Connection
                 if (stristr($e->getMessage(), "S1000") !== false) {
                     $attemptNumber++;
                     if ($attemptNumber > $maxBackoffAttempts) {
-                        throw new Exception("Initializing Snowflake connection failed: " . $e->getMessage(), null, $e);
+                        throw new UserException("Initializing Snowflake connection failed: " . $e->getMessage(), null, $e);
                     }
                 } else {
-                    throw new Exception("Initializing Snowflake connection failed: " . $e->getMessage(), null, $e);
+                    throw new UserException("Initializing Snowflake connection failed: " . $e->getMessage(), null, $e);
                 }
             }
         } while ($this->connection === null);
@@ -110,7 +112,7 @@ class Connection
      * @param $schemaName
      * @param $tableName
      * @return array
-     * @throws Exception
+     * @throws UserException
      */
     public function describeTable($schemaName, $tableName)
     {
@@ -126,7 +128,7 @@ class Connection
             }
         }
 
-        throw new Exception("Table $tableName not found in schema $schemaName");
+        throw new UserException("Table $tableName not found in schema $schemaName");
     }
 
     public function describeTableColumns($schemaName, $tableName)

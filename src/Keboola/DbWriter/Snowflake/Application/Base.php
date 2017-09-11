@@ -1,11 +1,12 @@
 <?php
 namespace Keboola\DbWriter\Snowflake\Application;
 
-use Keboola\DbWriter\Configuration\Validator;
-use Keboola\DbWriter\Exception\UserException;
-use Keboola\DbWriter\Logger;
+use Keboola\DbWriter\Snowflake\Exception\UserException;
+use Keboola\DbWriter\Snowflake\Logger\Logger;
 use Keboola\StorageApi\Client;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\Config\Definition\Exception\Exception as ConfigException;
+use Symfony\Component\Config\Definition\Processor;
 
 abstract class Base implements IApplication
 {
@@ -28,7 +29,28 @@ abstract class Base implements IApplication
     {
         $this->sapiClient = $sapiClient;
         $this->logger = $logger;
-        $this->validator = Validator::getValidator($configDefinition);
+        $this->validator = $this->createValidator($configDefinition);
+    }
+
+    protected function createValidator(ConfigurationInterface $definition)
+    {
+        return function ($parameters) use ($definition) {
+            try {
+                $processor = new Processor();
+                $processedParameters = $processor->processConfiguration(
+                    $definition,
+                    [$parameters]
+                );
+
+                if (!empty($processedParameters['db']['#password'])) {
+                    $processedParameters['db']['password'] = $processedParameters['db']['#password'];
+                }
+
+                return $processedParameters;
+            } catch (ConfigException $e) {
+                throw new UserException($e->getMessage(), 0, $e);
+            }
+        };
     }
 
     public function run($action, array $config)

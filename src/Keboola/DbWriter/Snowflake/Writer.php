@@ -9,15 +9,11 @@
 namespace Keboola\DbWriter\Snowflake;
 
 use Keboola\Csv\CsvFile;
-use Keboola\DbWriter\Exception\ApplicationException;
-use Keboola\DbWriter\Exception\UserException;
-use Keboola\DbWriter\Logger;
-use Keboola\DbWriter\Snowflake\Connection;
-use Keboola\DbWriter\Writer as BaseWriter;
-use Keboola\DbWriter\WriterInterface;
-use Keboola\StorageApi\Client;
+use Keboola\DbWriter\Snowflake\Exception\ApplicationException;
+use Keboola\DbWriter\Snowflake\Exception\UserException;
+use Keboola\DbWriter\Snowflake\Logger\Logger;
 
-class Writer extends BaseWriter implements WriterInterface
+class Writer extends BaseWriter
 {
     const STATEMENT_TIMEOUT_IN_SECONDS = 3600;
     const STAGE_NAME = 'db-writer';

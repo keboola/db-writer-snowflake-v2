@@ -4,9 +4,9 @@
  *
  * @author Erik Zigo <erik.zigo@keboola.com>
  */
-use Keboola\DbWriter\Exception\ApplicationException;
-use Keboola\DbWriter\Exception\UserException;
-use Keboola\DbWriter\Logger;
+use Keboola\DbWriter\Snowflake\Exception\ApplicationException;
+use Keboola\DbWriter\Snowflake\Exception\UserException;
+use Keboola\DbWriter\Snowflake\Logger\Logger;
 use Keboola\DbWriter\Snowflake\Application;
 use Monolog\Handler\NullHandler;
 use Symfony\Component\Yaml\Yaml;
@@ -14,7 +14,7 @@ use Symfony\Component\Yaml\Yaml;
 define('APP_NAME', 'wr-db-snowflake-v2');
 define('ROOT_PATH', __DIR__);
 
-require_once(dirname(__FILE__) . "/vendor/keboola/db-writer-common/bootstrap.php");
+require_once(dirname(__FILE__) . "/bootstrap.php");
 
 $logger = new Logger(APP_NAME);
 
