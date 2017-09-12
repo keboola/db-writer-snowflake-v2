@@ -111,7 +111,7 @@ class Connect extends Base
     {
         return (new Yaml())->parse(
             file_get_contents(
-                $directory . '/' . $tableId . ".csv.manifest"
+                $directory . '/' . $tableId . ".manifest"
             )
         );
     }
