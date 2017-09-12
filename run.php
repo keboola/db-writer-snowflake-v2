@@ -28,12 +28,18 @@ try {
         throw new UserException("Missing KBC API url");
     }
 
+    // setup SAPI
     $client = new \Keboola\StorageApi\Client([
         'token' => getenv('KBC_TOKEN'),
         'url' => getenv('KBC_URL'),
         'backoffMaxTries' => 0,
     ]);
 
+    if (getenv('KBC_RUNID')) {
+        $client->setRunId(getenv('KBC_RUNID'));
+    }
+
+    // configuration load
     $arguments = getopt("d::", ["data::"]);
     if (!isset($arguments["data"])) {
         throw new UserException('Data folder not set.');
@@ -74,7 +80,6 @@ try {
     $logger->log('error', $e->getMessage(), (array) $e->getData());
     exit($e->getCode() > 1 ? $e->getCode(): 2);
 } catch (\Exception $e) {
-    echo "\033[31mApp error\033[0m";
     $logger->log('error', $e->getMessage(), [
         'errFile' => $e->getFile(),
         'errLine' => $e->getLine(),
