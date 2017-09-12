@@ -33,9 +33,9 @@ class S3Loader
     public function upload($tableId)
     {
         $filePath = $this->getInputCsv($tableId);
-        $bucketId = 'in.c-test-wr-db-redshift';
+        $bucketId = 'in.c-test-wr-db-snowflake';
         if (!$this->storageApi->bucketExists($bucketId)) {
-            $this->storageApi->createBucket('test-wr-db-redshift', Client::STAGE_IN, "", 'snowflake');
+            $this->storageApi->createBucket('test-wr-db-snowflake', Client::STAGE_IN, "", 'snowflake');
         }
 
         $sourceTableId = $this->storageApi->createTable($bucketId, $tableId, new CsvFile($filePath));
