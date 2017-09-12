@@ -8,6 +8,7 @@
 
 namespace Keboola\DbWriter\Writer\Snowflake\Tests;
 
+use Keboola\Csv\CsvFile;
 use Keboola\DbWriter\Snowflake\Test\BaseTest;
 use Keboola\DbWriter\Snowflake\Test\S3Loader;
 use Keboola\StorageApi\Client;
@@ -22,43 +23,41 @@ class FunctionalTest extends BaseTest
 
     protected $tmpRunDir;
 
+    /**
+     * @var Client
+     */
+    private $storageApi;
+
     public function setUp()
     {
-        // cleanup & init
+        $this->storageApi = new Client([
+            'token' => getenv('KBC_TOKEN')
+        ]);
+
+        // cleanup KBC storage
+        $bucketId = 'in.c-test-wr-db-snowflake';
+        if ($this->storageApi->bucketExists($bucketId)) {
+            $this->storageApi->dropBucket($bucketId, ['force' => true]);
+        }
+
+        $this->storageApi->createBucket('test-wr-db-snowflake', 'in');
+
         $this->tmpRunDir = '/tmp/' . uniqid('wr-db-snowflake_');
         mkdir($this->tmpRunDir . '/in/tables/', 0777, true);
         $config = $this->initConfig();
 
-        $writer = $this->getWriter($config['parameters']);
-        $s3Loader = new S3Loader(
-            $this->dataDir,
-            new Client([
-                'token' => getenv('KBC_TOKEN')
-            ])
-        );
-
-        $yaml = new Yaml();
-
         foreach ($config['parameters']['tables'] as $table) {
-            // clean destination DB
-            $writer->drop($table['dbName']);
-
-            // upload source files to S3 - mimic functionality of docker-runner
-            $srcManifestPath = $this->dataDir . '/in/tables/' . $table['tableId'] . '.csv.manifest';
-            $manifestData = $yaml->parse(file_get_contents($srcManifestPath));
-            $manifestData['s3'] = $s3Loader->upload($table['tableId']);
-
-            $dstManifestPath = $this->tmpRunDir . '/in/tables/' . $table['tableId'] . '.csv.manifest';
-            file_put_contents(
-                $dstManifestPath,
-                $yaml->dump($manifestData)
+            $this->storageApi->createTableAsync(
+                $bucketId,
+                $table['tableId'],
+                new CsvFile($this->dataDir . '/in/tables/' . $table['tableId'] . '.csv')
             );
         }
     }
 
     public function testRun()
     {
-        $process = new Process('php ' . ROOT_PATH . 'run.php --data=' . $this->tmpRunDir . ' 2>&1');
+        $process = new Process('php ' . ROOT_PATH . 'run.php --data=' . $this->tmpRunDir . ' 2>&1', null, null, null, 180);
         $process->run();
 
         $this->assertEquals(0, $process->getExitCode(), 'Output: ' . $process->getOutput());
@@ -79,23 +78,7 @@ class FunctionalTest extends BaseTest
             return $config;
         });
 
-        $yaml = new Yaml();
-
-        foreach ($config['parameters']['tables'] as $table) {
-            // upload source files to S3 - mimic functionality of docker-runner
-            $srcManifestPath = $this->dataDir . '/in/tables/' . $table['tableId'] . '.csv.manifest';
-            $dstManifestPath = $this->tmpRunDir . '/in/tables/' . $table['tableId'] . '.csv.manifest';
-            $manifestData = $yaml->parse(file_get_contents($srcManifestPath));
-            $manifestData['columns'] = [];
-
-            unlink($dstManifestPath);
-            file_put_contents(
-                $dstManifestPath,
-                $yaml->dump($manifestData)
-            );
-        }
-
-        $process = new Process('php ' . ROOT_PATH . 'run.php --data=' . $this->tmpRunDir);
+        $process = new Process('php ' . ROOT_PATH . 'run.php --data=' . $this->tmpRunDir, null, null, null, 180);
         $process->run();
 
         $this->assertEquals(0, $process->getExitCode());
@@ -108,11 +91,10 @@ class FunctionalTest extends BaseTest
             return $config;
         });
 
-        $process = new Process('php ' . ROOT_PATH . 'run.php --data=' . $this->tmpRunDir . ' 2>&1');
+        $process = new Process('php ' . ROOT_PATH . 'run.php --data=' . $this->tmpRunDir . ' 2>&1', null, null, null, 180);
         $process->run();
 
         $this->assertEquals(0, $process->getExitCode());
-
         $data = json_decode($process->getOutput(), true);
 
         $this->assertArrayHasKey('status', $data);
@@ -126,7 +108,7 @@ class FunctionalTest extends BaseTest
             return $config;
         });
 
-        $process = new Process('php ' . ROOT_PATH . 'run.php --data=' . $this->tmpRunDir . ' 2>&1');
+        $process = new Process('php ' . ROOT_PATH . 'run.php --data=' . $this->tmpRunDir . ' 2>&1', null, null, null, 180);
         $process->run();
 
         $this->assertEquals(1, $process->getExitCode());
@@ -147,9 +129,28 @@ class FunctionalTest extends BaseTest
         $config['parameters']['db']['schema'] = $this->getEnv(self::DRIVER, 'DB_SCHEMA');
         $config['parameters']['db']['warehouse'] = $this->getEnv(self::DRIVER, 'DB_WAREHOUSE');
 
-
         if ($callback !== null) {
             $config = $callback($config);
+        }
+
+        $config['storage'] = ['input' => ['tables' => []]];
+        foreach ($config['parameters']['tables'] as $key => $table)
+        {
+            $config['storage']['input']['tables'][] = [
+                'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
+                'destination' => $table['tableId'],
+                'columns' => array_map(
+                    function($column) {
+                        return $column['name'];
+                    },
+                    array_filter(
+                        $table['items'],
+                        function($column) {
+                            return $column['type'] !== 'IGNORE';
+                        }
+                    )
+                )
+            ];
         }
 
         @unlink($dstConfigPath);
