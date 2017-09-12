@@ -7,7 +7,10 @@ use Keboola\DbWriter\Snowflake\Exception\UserException;
 use Keboola\DbWriter\Snowflake\Exception\ApplicationException;
 use Keboola\DbWriter\Snowflake\Logger\Logger;
 use Keboola\DbWriter\Snowflake\Writer;
+use Keboola\DockerBundle\Docker\Component;
+use Keboola\DockerBundle\Docker\Runner\DataLoader\DataLoader;
 use Keboola\StorageApi\Client;
+use Keboola\StorageApi\Components;
 use Symfony\Component\Yaml\Yaml;
 
 class Connect extends Base
@@ -17,7 +20,7 @@ class Connect extends Base
         parent::__construct($sapiClient, $logger, new ConnectDefinition());
     }
 
-    protected function testConnectionAction(array $config)
+    protected function testConnectionAction(array $config, array $mapping)
     {
         try {
             $writer = new Writer($config['db'], $this->logger);
@@ -31,10 +34,40 @@ class Connect extends Base
         ]);
     }
 
-    protected function runAction(array $config)
+    protected function getComponent($id)
+    {
+        $components = $this->sapiClient->indexAction();
+        foreach ($components["components"] as $component) {
+            if ($component["id"] === $id) {
+                return new Component($component);
+            }
+        }
+
+        throw new ApplicationException("Component '{$id}' not found.");
+    }
+
+    private function loadInputMapping(array $mapping, $dataDir)
+    {
+        $loader = new DataLoader(
+            $this->sapiClient,
+            $this->logger,
+            $dataDir,
+            $mapping,
+            $this->getComponent('keboola.wr-db-snowflake'), //@FIXME load from coniguration or component
+            null // @TODO config id ???
+        );
+
+        $loader->loadInputData();
+    }
+
+    protected function runAction(array $config, array $mapping)
     {
         $dataDir = new \SplFileInfo($config['data_dir'] . "/in/tables/");
 
+        // prepare input mapping - download from tables from KBC
+        $this->loadInputMapping($mapping, $config['data_dir']);
+
+        // upload tables
         $uploaded = [];
         $tables = array_filter($config['tables'], function ($table) {
             return ($table['export']);
