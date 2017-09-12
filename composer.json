@@ -15,11 +15,11 @@
         "keboola/csv": "^1.1",
         "pimple/pimple": "^3.0",
         "monolog/monolog": "^1.17",
-        "symfony/process": "^3.0",
-        "symfony/config": "^3.0",
-        "symfony/yaml": "^3.0",
-        "keboola/ssh-tunnel": "^1.0",
-        "keboola/storage-api-client": "^7.0.2"
+        "symfony/process": "^2.8",
+        "symfony/config": "^2.8",
+        "symfony/yaml": "^2.8",
+        "keboola/storage-api-client": "^7.0.2",
+        "keboola/dockerbundle": "dev-master#1b9dfd7"
     },
     "require-dev": {
         "phpunit/phpunit": "^5.4"
