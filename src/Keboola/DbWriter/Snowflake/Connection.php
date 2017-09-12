@@ -93,11 +93,6 @@ class Connection
         } while ($this->connection === null);
     }
 
-    public function __destruct()
-    {
-        odbc_close($this->connection);
-    }
-
     public function quoteIdentifier($value)
     {
         $q = '"';
