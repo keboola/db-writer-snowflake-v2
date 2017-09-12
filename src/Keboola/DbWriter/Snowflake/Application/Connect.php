@@ -27,9 +27,9 @@ class Connect extends Base
             throw new UserException(sprintf("Connection failed: '%s'", $e->getMessage()), 0, $e);
         }
 
-        return json_encode([
+        return [
             'status' => 'success',
-        ]);
+        ];
     }
 
     /**
