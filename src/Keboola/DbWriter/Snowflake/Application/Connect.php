@@ -8,10 +8,7 @@ use Keboola\DbWriter\Snowflake\Exception\ApplicationException;
 use Keboola\DbWriter\Snowflake\Logger\Logger;
 use Keboola\DbWriter\Snowflake\StorageApi\DataLoader;
 use Keboola\DbWriter\Snowflake\Writer;
-use Keboola\InputMapping\Exception\InvalidInputException;
-use Keboola\InputMapping\Reader\Reader;
 use Keboola\StorageApi\Client;
-use Keboola\StorageApi\ClientException;
 use Symfony\Component\Yaml\Yaml;
 
 class Connect extends Base
@@ -59,13 +56,13 @@ class Connect extends Base
 
     protected function runAction(array $config, array $mapping)
     {
-        $dataDir = new \SplFileInfo($config['data_dir'] . "/in/tables/");
-
         // prepare input mapping - download from tables from KBC)
-        $this->loadInputData($mapping, $config['data_dir']);
+        $this->loadInputData($mapping, "/tmp");
 
         // upload tables
         $uploaded = [];
+        $dataDir = new \SplFileInfo("/tmp/in/tables/");
+
         $tables = array_filter($config['tables'], function ($table) {
             return $table['export'] && !empty($table['items']);
         });
