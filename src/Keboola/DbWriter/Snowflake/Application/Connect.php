@@ -6,10 +6,12 @@ use Keboola\DbWriter\Snowflake\Configuration\ConnectDefinition;
 use Keboola\DbWriter\Snowflake\Exception\UserException;
 use Keboola\DbWriter\Snowflake\Exception\ApplicationException;
 use Keboola\DbWriter\Snowflake\Logger\Logger;
+use Keboola\DbWriter\Snowflake\StorageApi\DataLoader;
 use Keboola\DbWriter\Snowflake\Writer;
-use Keboola\DockerBundle\Docker\Component;
-use Keboola\DockerBundle\Docker\Runner\DataLoader\DataLoader;
+use Keboola\InputMapping\Exception\InvalidInputException;
+use Keboola\InputMapping\Reader\Reader;
 use Keboola\StorageApi\Client;
+use Keboola\StorageApi\ClientException;
 use Symfony\Component\Yaml\Yaml;
 
 class Connect extends Base
@@ -33,38 +35,34 @@ class Connect extends Base
         ]);
     }
 
-    protected function getComponent($id)
+    /**
+     * @param array $mapping
+     * @param $dataDir
+     * @throws ApplicationException
+     */
+    private function loadInputData(array $mapping, $dataDir)
     {
-        $components = $this->sapiClient->indexAction();
-        foreach ($components["components"] as $component) {
-            if ($component["id"] === $id) {
-                return new Component($component);
-            }
+        try {
+            $loader = new DataLoader(
+                $this->sapiClient,
+                $this->logger,
+                $dataDir,
+                $mapping,
+                'keboola.wr-db-snowflake' //@FIXME load from coniguration or component
+            );
+
+            $loader->loadInputData();
+        } catch (\InvalidArgumentException $e) {
+            throw new ApplicationException($e->getMessage());
         }
-
-        throw new ApplicationException("Component '{$id}' not found.");
-    }
-
-    private function loadInputMapping(array $mapping, $dataDir)
-    {
-        $loader = new DataLoader(
-            $this->sapiClient,
-            $this->logger,
-            $dataDir,
-            $mapping,
-            $this->getComponent('keboola.wr-db-snowflake'), //@FIXME load from coniguration or component
-            null // @TODO config id ???
-        );
-
-        $loader->loadInputData();
     }
 
     protected function runAction(array $config, array $mapping)
     {
         $dataDir = new \SplFileInfo($config['data_dir'] . "/in/tables/");
 
-        // prepare input mapping - download from tables from KBC
-        $this->loadInputMapping($mapping, $config['data_dir']);
+        // prepare input mapping - download from tables from KBC)
+        $this->loadInputData($mapping, $config['data_dir']);
 
         // upload tables
         $uploaded = [];
