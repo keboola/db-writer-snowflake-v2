@@ -15,7 +15,7 @@ class Workspace extends Base
         parent::__construct($sapiClient, $logger, new WorkspaceDefinition());
     }
 
-    protected function testConnectionAction(array $params)
+    protected function testConnectionAction(array $params, array $mapping)
     {
         $workspaces = new Workspaces($this->sapiClient);
         // @FIXME validate if workspace is assigned to our compoennt
@@ -30,7 +30,7 @@ class Workspace extends Base
         ];
     }
 
-    protected function runAction(array $params)
+    protected function runAction(array $params, array $mapping)
     {
         $workspaces = new Workspaces($this->sapiClient);
 
