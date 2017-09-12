@@ -10,7 +10,6 @@ use Keboola\DbWriter\Snowflake\Writer;
 use Keboola\DockerBundle\Docker\Component;
 use Keboola\DockerBundle\Docker\Runner\DataLoader\DataLoader;
 use Keboola\StorageApi\Client;
-use Keboola\StorageApi\Components;
 use Symfony\Component\Yaml\Yaml;
 
 class Connect extends Base

@@ -36,7 +36,7 @@ class Workspace extends Base
 
         $uploaded = [];
         $tables = array_filter($params['tables'], function ($table) {
-            return ($table['export']);
+            return $table['export'] && !empty($table['items']);
         });
 
         foreach ($tables as $table) {
@@ -67,8 +67,7 @@ class Workspace extends Base
             }
 
             try {
-                $hovno = $workspaces->loadWorkspaceData($params['workspaceId'], $options);
-                var_dump($hovno);
+                $workspaces->loadWorkspaceData($params['workspaceId'], $options);
             } catch (ClientException $e) {
                 //@TODO error code better conversion
                 throw new UserException($e->getMessage());
