@@ -70,17 +70,11 @@ class Connect extends Base
         // upload tables
         $uploaded = [];
         $tables = array_filter($config['tables'], function ($table) {
-            return ($table['export']);
+            return $table['export'] && !empty($table['items']);
         });
 
         $writer = new Writer($config['db'], $this->logger);
         foreach ($tables as $table) {
-            if (!$writer->isTableValid($table)) {
-                //@TODO log reason for skipping
-                $this->logger->info("skipped due bad table");
-                continue;
-            }
-
             $manifest = $this->getManifest($table['tableId'], $dataDir);
 
             $targetTableName = $table['dbName'];
@@ -88,12 +82,6 @@ class Connect extends Base
                 $table['dbName'] = $writer->generateTmpName($table['dbName']);
             }
             $table['items'] = $this->reorderColumns($manifest['columns'], $table['items']);
-
-            if (empty($table['items'])) {
-                //@TODO log reason for skipping
-                $this->logger->info("skipped due any columns");
-                continue;
-            }
 
             try {
                 $writer->drop($table['dbName']);
