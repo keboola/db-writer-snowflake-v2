@@ -1,0 +1,37 @@
+parameters:
+    tables:
+        -
+            tableId: simple
+            dbName: simple
+            export: true
+            incremental: false
+            primaryKey: [id]
+            items:
+                -
+                    name: id
+                    dbName: id
+                    type: int
+                    size:
+                    nullable:
+                    default:
+                -
+                    name: name
+                    dbName: name
+                    type: varchar
+                    size: 255
+                    nullable:
+                    default:
+                -
+                    name: glasses
+                    dbName: glasses
+                    type: varchar
+                    size: 255
+                    nullable:
+                    default:
+                -
+                    name: age
+                    dbName: age
+                    type: int
+                    size:
+                    nullable: true
+                    default:
