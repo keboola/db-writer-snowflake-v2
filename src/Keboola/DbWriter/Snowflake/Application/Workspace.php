@@ -39,7 +39,19 @@ class Workspace extends Base
             return $table['export'] && !empty($table['items']);
         });
 
+        $whereValues = [];
+        if (isset($mapping['input']['tables'])) {
+            foreach ($mapping['input']['tables'] as $mappingTable) {
+                $whereValues[$mappingTable['source']] = [
+                    'whereColumn' => $mappingTable['where_column'],
+                    'whereValues' => $mappingTable['where_values'],
+                    'whereOperator' => 'eq',
+                ];
+            }
+        }
+
         foreach ($tables as $table) {
+            //@FIXME use only one workspace load
             $this->logger->info(sprintf('Trying load table: "%s"', $table['tableId']));
             $options = [
                 'input' => [
@@ -47,18 +59,16 @@ class Workspace extends Base
                         'source' => $table['tableId'],
                         'destination' => $table['dbName'],
                         'incremental' => $table['incremental'],
-                        'datatypes' => [],
                         'columns' => [],
                     ],
                 ],
             ];
 
-
+            // columns specification
             foreach ($table['items'] as $item) {
-                $options['input'][0]['columns'][] = $item['name'];
-
-                $options['input'][0]['datatypes'][$item['name']] = [
-                    'column' => $item['name'],
+                $options['input'][0]['columns'][] = [
+                    'source' => $item['name'],
+                    'destination' => $item['dbName'],
                     'type' => $item['type'],
                     'length' => $item['size'],
                     'nullable' => $item['nullable'],
@@ -66,10 +76,16 @@ class Workspace extends Base
                 ];
             }
 
+            // where filters
+            if (isset($whereValues[$table['tableId']])) {
+                $options['input'][0]['whereColumn'] = $whereValues[$table['tableId']]['whereColumn'];
+                $options['input'][0]['whereValues'] = $whereValues[$table['tableId']]['whereValues'];
+                $options['input'][0]['whereOperator'] = $whereValues[$table['tableId']]['whereOperator'];
+            }
+
             try {
                 $workspaces->loadWorkspaceData($params['workspaceId'], $options);
             } catch (ClientException $e) {
-                //@TODO error code better conversion
                 throw new UserException($e->getMessage());
             }
 
