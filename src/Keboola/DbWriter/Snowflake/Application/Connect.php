@@ -45,7 +45,7 @@ class Connect extends Base
                 $this->logger,
                 $dataDir,
                 $mapping,
-                'keboola.wr-db-snowflake' //@FIXME load from coniguration or component
+                getenv('KBC_COMPONENTID')
             );
 
             $loader->loadInputData();
