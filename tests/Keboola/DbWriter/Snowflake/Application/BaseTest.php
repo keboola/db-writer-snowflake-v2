@@ -22,7 +22,8 @@ abstract class BaseTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->storageApi = new Client([
-            'token' => getenv('KBC_TOKEN')
+            'token' => getenv('KBC_TOKEN'),
+            'url' => getenv('KBC_URL'),
         ]);
 
         $this->logger = new Logger('tests', true);
@@ -38,7 +39,7 @@ abstract class BaseTest extends \PHPUnit_Framework_TestCase
 
         $this->storageApi->createBucket('test-wr-db-snowflake', 'in');
 
-        $tableId = $this->storageApi->createTable(
+        $tableId = $this->storageApi->createTableAsync(
             $bucketId,
             'simple',
             new CsvFile($this->dataDir . '/incremental/in/tables/simple.csv')
