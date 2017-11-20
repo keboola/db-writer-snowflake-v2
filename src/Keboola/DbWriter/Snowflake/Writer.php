@@ -350,6 +350,11 @@ class Writer extends BaseWriter
         }
     }
 
+    public function getConnection()
+    {
+        return $this->db;
+    }
+
     public function generateTmpName($tableName)
     {
         return '__temp_' . str_replace('.', '_', uniqid('wr_db_', true));

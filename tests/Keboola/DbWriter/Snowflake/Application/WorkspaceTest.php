@@ -1,7 +1,8 @@
 <?php
 namespace Keboola\DbWriter\Snowflake\Application;
 
-use Keboola\DbWriter\Snowflake\Logger\Logger;
+use Keboola\Csv\CsvFile;
+use Keboola\DbWriter\Snowflake\Writer;
 use Keboola\StorageApi\Components;
 use Keboola\StorageApi\Options\Components\Configuration;
 use Keboola\StorageApi\Options\Components\ListComponentConfigurationsOptions;
@@ -59,15 +60,15 @@ class WorkspaceTest extends BaseTest
         $configuration = $components->addConfiguration($configuration);
         $workspace = $components->createConfigurationWorkspace($componentId, $configuration['id']);
 
-        return $workspace['id'];
+        return $workspace;
     }
 
     public function testConnect()
     {
-        $workspaceId = $this->prepareWorkspace();
+        $workspace = $this->prepareWorkspace();
 
         $this->logger->setHandlers([new NullHandler()]);
-        $config = $this->initConfig($workspaceId);
+        $config = $this->initConfig($workspace['id']);
 
         $result = $this->application->run('testConnection', $config);
 
@@ -75,7 +76,102 @@ class WorkspaceTest extends BaseTest
         $this->assertEquals('success', $result['status']);
     }
 
-    private function initConfig($workspaceId, $tablesWhere = [])
+    public function testRun()
+    {
+        $this->prepareSapiTables();
+        $workspace = $this->prepareWorkspace();
+
+        $writer = new Writer($workspace['connection'], $this->logger);
+
+        // first run
+        $whereTables = [
+            'simple' => [
+                'where_column' => 'glasses',
+                'where_values' => ['no', 'sometimes'],
+            ]
+        ];
+
+        $config = $this->initConfig($workspace['id'], $whereTables);
+
+        foreach ($config['storage']['input']['tables'] as $table) {
+            $this->assertFalse($writer->tableExists($table['destination']));
+        }
+
+        $result = $this->application->run('run', $config);
+
+        $this->assertArrayHasKey('status', $result);
+        $this->assertEquals('success', $result['status']);
+
+        foreach ($config['parameters']['tables'] as $table) {
+            $this->assertTrue($writer->tableExists($table['dbName']));
+
+            $res = $writer->getConnection()->fetchAll(sprintf('SELECT * FROM "%s" ORDER BY "id" ASC', $table['dbName']));
+
+            $tableMetadata = $this->storageApi->getTable($table['tableId']);
+
+            $resFilename = tempnam('/tmp', 'db-wr-test-tmp');
+            $csv = new CsvFile($resFilename);
+            $csv->writeRow($tableMetadata['columns']);
+            foreach ($res as $row) {
+                $csv->writeRow($row);
+            }
+
+            $file = new CsvFile($this->dataDir . '/incremental/in/tables/' . $table['dbName'] . '_filtered.csv');
+            $this->assertFileEquals((string) $file, (string) $csv);
+        }
+
+        foreach ($config['parameters']['tables'] as $table) {
+            $this->storageApi->writeTableAsync(
+                $table['tableId'],
+                new CsvFile($this->dataDir . '/incremental/in/tables/' . $table['dbName'] . '_increment.csv'),
+                [
+                    'incremental' => true,
+                ]
+            );
+        }
+
+        // second run - increment
+        $whereTables = [
+            'simple' => [
+                'where_column' => 'id',
+                'where_values' => ['3', '4', '5'],
+            ]
+        ];
+
+        $config = $this->initConfig($workspace['id'], $whereTables, true);
+
+        $result = $this->application->run('run', $config);
+
+        $this->assertArrayHasKey('status', $result);
+        $this->assertEquals('success', $result['status']);
+
+        foreach ($config['parameters']['tables'] as $table) {
+            $this->assertTrue($writer->tableExists($table['dbName']));
+
+            $res = $writer->getConnection()->fetchAll(sprintf('SELECT * FROM "%s" ORDER BY "id" ASC', $table['dbName']));
+
+            $tableMetadata = $this->storageApi->getTable($table['tableId']);
+
+            $resFilename = tempnam('/tmp', 'db-wr-test-tmp');
+            $csv = new CsvFile($resFilename);
+            $csv->writeRow($tableMetadata['columns']);
+            foreach ($res as $row) {
+                $csv->writeRow($row);
+            }
+
+            $file = new CsvFile($this->dataDir . '/incremental/in/tables/' . $table['dbName'] . '_merged.csv');
+            $this->assertFileEquals((string) $file, (string) $csv);
+        }
+
+        // null test - age column is nullable
+        $res = $writer->getConnection()->fetchAll(sprintf('SELECT COUNT(*) as "count" FROM "%s" WHERE "age" IS NULL', $table['dbName']));
+        $this->assertEquals(4, reset($res)['count']);
+
+        $res = $writer->getConnection()->fetchAll(sprintf('SELECT COUNT(*) as "count" FROM "%s" WHERE "age" IS NOT NULL', $table['dbName']));
+        $this->assertEquals(2, reset($res)['count']);
+    }
+
+    private function initConfig($workspaceId, $tablesWhere = [], $incremental = false)
     {
         $yaml = new Yaml();
         $config = $yaml->parse(file_get_contents($this->dataDir . '/incremental/config.yml'));
@@ -86,6 +182,9 @@ class WorkspaceTest extends BaseTest
         $config['storage'] = ['input' => ['tables' => []]];
         foreach ($config['parameters']['tables'] as $key => $table)
         {
+            $config['parameters']['tables'][$key]['tableId'] = 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'];
+            $config['parameters']['tables'][$key]['incremental'] = (bool) $incremental;
+
             $mappingTable = [
                 'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
                 'destination' => $table['tableId'],
