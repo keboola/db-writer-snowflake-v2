@@ -18,7 +18,7 @@ class Workspace extends Base
     protected function testConnectionAction(array $params, array $mapping)
     {
         $workspaces = new Workspaces($this->sapiClient);
-        // @FIXME validate if workspace is assigned to our compoennt
+        // @TODO validate if workspace is assigned to our compoennt
         try {
             $workspaces->getWorkspace($params['workspaceId']);
         } catch (ClientException $e) {
@@ -51,7 +51,7 @@ class Workspace extends Base
         }
 
         foreach ($tables as $table) {
-            //@FIXME use only one workspace load
+            //@TODO use only one workspace load
             $this->logger->info(sprintf('Trying load table: "%s"', $table['tableId']));
             $options = [
                 'input' => [
@@ -84,6 +84,7 @@ class Workspace extends Base
             }
 
             try {
+                // @TODO validate if workspace is assigned to our compoennt
                 $workspaces->loadWorkspaceData($params['workspaceId'], $options);
             } catch (ClientException $e) {
                 throw new UserException($e->getMessage());
