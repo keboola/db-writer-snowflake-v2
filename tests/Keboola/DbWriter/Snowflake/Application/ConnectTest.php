@@ -1,6 +1,8 @@
 <?php
 namespace Keboola\DbWriter\Snowflake\Application;
 
+use Keboola\Csv\CsvFile;
+use Keboola\DbWriter\Snowflake\Writer;
 use Keboola\DbWriter\Writer\SnowflakeTest;
 use Monolog\Handler\NullHandler;
 use Symfony\Component\Yaml\Yaml;
@@ -30,7 +32,98 @@ class ConnectTest extends BaseTest
         $this->assertEquals('success', $result['status']);
     }
 
-    private function initConfig($tablesWhere = [])
+    public function testRun()
+    {
+        $this->prepareSapiTables();
+
+        $config = $this->initConfig();
+        $writer = new Writer($config['parameters']['db'], $this->logger);
+
+        // first run
+        $whereTables = [
+            'simple' => [
+                'where_column' => 'glasses',
+                'where_values' => ['no', 'sometimes'],
+            ]
+        ];
+
+        $config = $this->initConfig($whereTables);
+
+        $result = $this->application->run('run', $config);
+
+        $this->assertArrayHasKey('status', $result);
+        $this->assertEquals('success', $result['status']);
+
+        foreach ($config['parameters']['tables'] as $table) {
+            $this->assertTrue($writer->tableExists($table['dbName']));
+
+            $res = $writer->getConnection()->fetchAll(sprintf('SELECT * FROM "%s" ORDER BY "id" ASC', $table['dbName']));
+
+            $tableMetadata = $this->storageApi->getTable($table['tableId']);
+
+            $resFilename = tempnam('/tmp', 'db-wr-test-tmp');
+            $csv = new CsvFile($resFilename);
+            $csv->writeRow($tableMetadata['columns']);
+            foreach ($res as $row) {
+                $csv->writeRow($row);
+            }
+
+            $file = new CsvFile($this->dataDir . '/incremental/in/tables/' . $table['dbName'] . '_filtered.csv');
+            $this->assertFileEquals((string) $file, (string) $csv);
+        }
+
+        foreach ($config['parameters']['tables'] as $table) {
+            $this->storageApi->writeTableAsync(
+                $table['tableId'],
+                new CsvFile($this->dataDir . '/incremental/in/tables/' . $table['dbName'] . '_increment.csv'),
+                [
+                    'incremental' => true,
+                ]
+            );
+        }
+
+        // second run - increment
+        $whereTables = [
+            'simple' => [
+                'where_column' => 'id',
+                'where_values' => ['3', '4', '5'],
+            ]
+        ];
+
+        $config = $this->initConfig($whereTables, true);
+
+        $result = $this->application->run('run', $config);
+
+        $this->assertArrayHasKey('status', $result);
+        $this->assertEquals('success', $result['status']);
+
+        foreach ($config['parameters']['tables'] as $table) {
+            $this->assertTrue($writer->tableExists($table['dbName']));
+
+            $res = $writer->getConnection()->fetchAll(sprintf('SELECT * FROM "%s" ORDER BY "id" ASC', $table['dbName']));
+
+            $tableMetadata = $this->storageApi->getTable($table['tableId']);
+
+            $resFilename = tempnam('/tmp', 'db-wr-test-tmp');
+            $csv = new CsvFile($resFilename);
+            $csv->writeRow($tableMetadata['columns']);
+            foreach ($res as $row) {
+                $csv->writeRow($row);
+            }
+
+            $file = new CsvFile($this->dataDir . '/incremental/in/tables/' . $table['dbName'] . '_merged.csv');
+            $this->assertFileEquals((string) $file, (string) $csv);
+        }
+
+        // null test - age column is nullable
+        $res = $writer->getConnection()->fetchAll(sprintf('SELECT COUNT(*) as "count" FROM "%s" WHERE "age" IS NULL', $table['dbName']));
+        $this->assertEquals(4, reset($res)['count']);
+
+        $res = $writer->getConnection()->fetchAll(sprintf('SELECT COUNT(*) as "count" FROM "%s" WHERE "age" IS NOT NULL', $table['dbName']));
+        $this->assertEquals(2, reset($res)['count']);
+    }
+
+    private function initConfig($tablesWhere = [], $incremental = false)
     {
         $driver = SnowflakeTest::DRIVER;
         $yaml = new Yaml();
@@ -50,6 +143,9 @@ class ConnectTest extends BaseTest
         $config['storage'] = ['input' => ['tables' => []]];
         foreach ($config['parameters']['tables'] as $key => $table)
         {
+            $config['parameters']['tables'][$key]['tableId'] = 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'];
+            $config['parameters']['tables'][$key]['incremental'] = (bool) $incremental;
+
             $mappingTable = [
                 'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
                 'destination' => $table['tableId'],
