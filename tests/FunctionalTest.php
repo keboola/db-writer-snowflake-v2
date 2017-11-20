@@ -31,7 +31,8 @@ class FunctionalTest extends BaseTest
     public function setUp()
     {
         $this->storageApi = new Client([
-            'token' => getenv('KBC_TOKEN')
+            'token' => getenv('KBC_TOKEN'),
+            'url' => getenv('KBC_URL'),
         ]);
 
         // cleanup KBC storage
