@@ -12,7 +12,7 @@ parameters:
                     dbName: id
                     type: int
                     size:
-                    nullable:
+                    nullable: false
                     default:
                 -
                     name: name
