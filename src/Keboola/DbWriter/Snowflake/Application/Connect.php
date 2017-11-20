@@ -69,7 +69,7 @@ class Connect extends Base
 
         $writer = new Writer($config['db'], $this->logger);
         foreach ($tables as $table) {
-            $manifest = $this->getManifest($table['tableId'], $dataDir);
+            $manifest = $this->getManifest($table['dbName'], $dataDir);
 
             $targetTableName = $table['dbName'];
             if ($table['incremental']) {
