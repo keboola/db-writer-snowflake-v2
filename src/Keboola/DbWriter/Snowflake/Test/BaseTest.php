@@ -20,12 +20,16 @@ class BaseTest extends \PHPUnit_Framework_TestCase
     protected function getConfig($driver)
     {
         $config = Yaml::parse(file_get_contents($this->dataDir . '/' .$driver . '/config.yml'));
+
         $config['parameters']['data_dir'] = $this->dataDir;
         $config['parameters']['db']['user'] = $this->getEnv($driver, 'DB_USER', true);
         $config['parameters']['db']['#password'] = $this->getEnv($driver, 'DB_PASSWORD', true);
         $config['parameters']['db']['host'] = $this->getEnv($driver, 'DB_HOST');
         $config['parameters']['db']['port'] = $this->getEnv($driver, 'DB_PORT');
         $config['parameters']['db']['database'] = $this->getEnv($driver, 'DB_DATABASE');
+        $config['parameters']['db']['schema'] = $this->getEnv($driver, 'DB_SCHEMA');
+        $config['parameters']['db']['warehouse'] = $this->getEnv($driver, 'DB_WAREHOUSE');
+        $config['parameters']['db']['password'] = $config['parameters']['db']['#password'];
 
         return $config;
     }
