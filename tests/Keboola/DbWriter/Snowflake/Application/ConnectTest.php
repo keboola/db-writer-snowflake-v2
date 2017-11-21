@@ -141,8 +141,7 @@ class ConnectTest extends BaseTest
         $config['parameters']['data_dir'] = $this->dataDir . '/incremental/';
 
         $config['storage'] = ['input' => ['tables' => []]];
-        foreach ($config['parameters']['tables'] as $key => $table)
-        {
+        foreach ($config['parameters']['tables'] as $key => $table) {
             $config['parameters']['tables'][$key]['tableId'] = 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'];
             $config['parameters']['tables'][$key]['incremental'] = (bool) $incremental;
 
@@ -150,12 +149,12 @@ class ConnectTest extends BaseTest
                 'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
                 'destination' => $table['tableId'],
                 'columns' => array_map(
-                    function($column) {
+                    function ($column) {
                         return $column['name'];
                     },
                     array_filter(
                         $table['items'],
-                        function($column) {
+                        function ($column) {
                             return $column['type'] !== 'IGNORE';
                         }
                     )

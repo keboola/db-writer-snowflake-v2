@@ -109,6 +109,7 @@ class DataLoader
                 return $stagingStorage['input'];
             }
         }
+
         return 'local';
     }
 }

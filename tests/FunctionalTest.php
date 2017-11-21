@@ -135,18 +135,17 @@ class FunctionalTest extends BaseTest
         }
 
         $config['storage'] = ['input' => ['tables' => []]];
-        foreach ($config['parameters']['tables'] as $key => $table)
-        {
+        foreach ($config['parameters']['tables'] as $key => $table) {
             $config['storage']['input']['tables'][] = [
                 'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
                 'destination' => $table['tableId'],
                 'columns' => array_map(
-                    function($column) {
+                    function ($column) {
                         return $column['name'];
                     },
                     array_filter(
                         $table['items'],
-                        function($column) {
+                        function ($column) {
                             return $column['type'] !== 'IGNORE';
                         }
                     )
