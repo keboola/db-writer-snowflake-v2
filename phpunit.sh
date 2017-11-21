@@ -1,3 +1,8 @@
 #!/usr/bin/env bash
 
-date
+composer selfupdate
+composer install -n
+
+export ROOT_PATH="/code";
+
+./vendor/bin/phpunit

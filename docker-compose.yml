@@ -1,0 +1,36 @@
+version: '2'
+
+services:
+
+  app:
+    build: .
+    image: keboola/wr-db-snowflake-v2
+    volumes:
+      - .:/code
+    working_dir: /code
+    command: "./phpunit.sh"
+    tty: true
+    stdin_open: true
+    environment:
+      - KBC_TOKEN
+      - KBC_URL
+      - KBC_RUNID
+      - KBC_COMPONENTID
+      - SNOWFLAKE_DB_HOST
+      - SNOWFLAKE_DB_PORT
+      - SNOWFLAKE_DB_USER
+      - SNOWFLAKE_DB_PASSWORD
+      - SNOWFLAKE_DB_DATABASE
+      - SNOWFLAKE_DB_SCHEMA
+      - SNOWFLAKE_DB_WAREHOUSE
+
+  drivers-download:
+    build:
+      context: .
+      dockerfile: Dockerfile-DriversDownload
+    working_dir: /code
+    volumes:
+      - .:/code
+    environment:
+      - AWS_ACCESS_KEY
+      - AWS_SECRET_KEY
