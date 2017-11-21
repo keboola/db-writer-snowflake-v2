@@ -32,7 +32,6 @@ try {
     $client = new \Keboola\StorageApi\Client([
         'token' => getenv('KBC_TOKEN'),
         'url' => getenv('KBC_URL'),
-        'backoffMaxTries' => 0,
     ]);
 
     if (getenv('KBC_RUNID')) {
