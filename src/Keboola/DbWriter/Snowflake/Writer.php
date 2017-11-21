@@ -58,11 +58,53 @@ class Writer extends BaseWriter
 
     public function writeFromS3($s3info, array $table)
     {
-        $this->execQuery($this->generateCreateStageCommand($s3info));
-        $this->execQuery($this->generateCopyCommand($table['dbName'], $s3info, $table['items']));
+        $this->execQuery($this->generateDropStageCommand()); // remove old db wr stage
+
+        $stageName = $this->generateStageName(getenv('KBC_RUNID'));
+
+        $this->execQuery($this->generateCreateStageCommand($stageName, $s3info));
+
+        try {
+            $this->execQuery($this->generateCopyCommand($table['dbName'], $stageName, $s3info, $table['items']));
+        } catch (UserException $e) {
+            $this->execQuery($this->generateDropStageCommand($stageName));
+            throw $e;
+        }
+
+        $this->execQuery($this->generateDropStageCommand($stageName));
     }
 
-    private function generateCreateStageCommand($s3info)
+    /**
+     * Generate stage name for given run ID
+     *
+     * @param string $runId
+     * @return string
+     */
+    public function generateStageName($runId = null)
+    {
+        return rtrim(
+            mb_substr(
+                sprintf(
+                    "%s-%s",
+                    self::STAGE_NAME,
+                    str_replace('.', '-', $runId)
+                ),
+                0,
+                255
+            ),
+            '-'
+        );
+    }
+
+    private function generateDropStageCommand($stage = self::STAGE_NAME)
+    {
+        return sprintf(
+            "DROP STAGE IF EXISTS %s",
+            $this->quoteIdentifier($stage)
+        );
+    }
+
+    private function generateCreateStageCommand($stageName, $s3info)
     {
         $csvOptions = [];
         $csvOptions[] = sprintf('FIELD_DELIMITER = %s', $this->quote(','));
@@ -79,7 +121,7 @@ class Writer extends BaseWriter
              URL = 's3://%s'
              CREDENTIALS = (AWS_KEY_ID = %s AWS_SECRET_KEY = %s  AWS_TOKEN = %s)
             ",
-            $this->quoteIdentifier(self::STAGE_NAME),
+            $this->quoteIdentifier($stageName),
             implode(' ', $csvOptions),
             $s3info['bucket'],
             $this->quote($s3info['credentials']['access_key_id']),
@@ -88,7 +130,7 @@ class Writer extends BaseWriter
         );
     }
 
-    private function generateCopyCommand($tableName, $s3info, $columns)
+    private function generateCopyCommand($tableName, $stageName, $s3info, $columns)
     {
         $columnNames = array_map(function ($column) {
             return $this->quoteIdentifier($column['dbName']);
@@ -122,7 +164,7 @@ class Writer extends BaseWriter
             $this->nameWithSchemaEscaped($tableName),
             implode(', ', $columnNames),
             implode(', ', $transformationColumns),
-            $this->quote('@' . $this->quoteIdentifier(self::STAGE_NAME) . "/" . $path),
+            $this->quote('@' . $this->quoteIdentifier($stageName) . "/" . $path),
             $pattern
         );
     }
