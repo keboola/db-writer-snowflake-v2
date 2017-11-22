@@ -64,27 +64,6 @@ class FunctionalTest extends BaseTest
         $this->assertEquals(0, $process->getExitCode(), 'Output: ' . $process->getOutput());
     }
 
-    public function testRunAllIgnored()
-    {
-        $config = $this->initConfig(function ($config) {
-            $tables = array_map(function ($table) {
-                $table['items'] = array_map(function ($item) {
-                    $item['type'] = 'IGNORE';
-                    return $item;
-                }, $table['items']);
-                return $table;
-            }, $config['parameters']['tables']);
-            $config['parameters']['tables'] = $tables;
-
-            return $config;
-        });
-
-        $process = new Process('php ' . ROOT_PATH . 'run.php --data=' . $this->tmpRunDir, null, null, null, 180);
-        $process->run();
-
-        $this->assertEquals(0, $process->getExitCode());
-    }
-
     public function testTestConnection()
     {
         $this->initConfig(function ($config) {
