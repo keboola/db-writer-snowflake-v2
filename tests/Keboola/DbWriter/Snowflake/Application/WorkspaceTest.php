@@ -172,7 +172,7 @@ class WorkspaceTest extends BaseTest
 
     private function initConfig($workspaceId, $tablesWhere = [], $incremental = false)
     {
-        $config = json_decode(file_get_contents($this->dataDir . '/incremental/config.json'));
+        $config = json_decode(file_get_contents($this->dataDir . '/incremental/config.json'), true);
 
         $config['parameters']['workspaceId'] = $workspaceId;
         $config['parameters']['data_dir'] = $this->dataDir . '/incremental/';
