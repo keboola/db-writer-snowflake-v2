@@ -17,7 +17,6 @@
         "monolog/monolog": "^1.17",
         "symfony/process": "^2.8",
         "symfony/config": "^2.8",
-        "symfony/yaml": "^2.8",
         "keboola/storage-api-client": "^7.0.2",
         "keboola/input-mapping": "^3.0",
         "keboola/php-temp": "^0.1",
