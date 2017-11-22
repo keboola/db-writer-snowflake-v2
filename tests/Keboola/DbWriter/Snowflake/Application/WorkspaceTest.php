@@ -9,7 +9,6 @@ use Keboola\StorageApi\Options\Components\ListComponentConfigurationsOptions;
 use Keboola\StorageApi\Options\Components\ListConfigurationWorkspacesOptions;
 use Keboola\StorageApi\Workspaces;
 use Monolog\Handler\NullHandler;
-use Symfony\Component\Yaml\Yaml;
 
 class WorkspaceTest extends BaseTest
 {
@@ -173,8 +172,7 @@ class WorkspaceTest extends BaseTest
 
     private function initConfig($workspaceId, $tablesWhere = [], $incremental = false)
     {
-        $yaml = new Yaml();
-        $config = $yaml->parse(file_get_contents($this->dataDir . '/incremental/config.yml'));
+        $config = json_decode(file_get_contents($this->dataDir . '/incremental/config.json'));
 
         $config['parameters']['workspaceId'] = $workspaceId;
         $config['parameters']['data_dir'] = $this->dataDir . '/incremental/';

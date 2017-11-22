@@ -44,12 +44,12 @@ try {
         throw new UserException('Data folder not set.');
     }
 
-    $configFile = new SplFileInfo($arguments["data"] . "/config.yml");
+    $configFile = new SplFileInfo($arguments["data"] . "/config.json");
     if (!$configFile->isFile()) {
         throw new UserException('Missing configuration file in data folder.');
     }
 
-    $config = Yaml::parse(file_get_contents($configFile));
+    $config = json_decode(file_get_contents($configFile), true);
     $config['parameters']['data_dir'] = $arguments['data'];
     $action = isset($config['action']) ? $config['action'] : $action;
 

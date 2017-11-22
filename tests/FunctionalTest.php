@@ -10,10 +10,8 @@ namespace Keboola\DbWriter\Writer\Snowflake\Tests;
 
 use Keboola\Csv\CsvFile;
 use Keboola\DbWriter\Snowflake\Test\BaseTest;
-use Keboola\DbWriter\Snowflake\Test\S3Loader;
 use Keboola\StorageApi\Client;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Yaml\Yaml;
 
 class FunctionalTest extends BaseTest
 {
@@ -96,9 +94,8 @@ class FunctionalTest extends BaseTest
 
     private function initConfig(callable $callback = null)
     {
-        $yaml = new Yaml();
-        $dstConfigPath = $this->tmpRunDir . '/config.yml';
-        $config = $yaml->parse(file_get_contents($this->dataDir . '/config.yml'));
+        $dstConfigPath = $this->tmpRunDir . '/config.json';
+        $config = json_decode(file_get_contents($this->dataDir . '/config.json'), true);
 
         $config['parameters']['db']['user'] = $this->getEnv(self::DRIVER, 'DB_USER', true);
         $config['parameters']['db']['#password'] = $this->getEnv(self::DRIVER, 'DB_PASSWORD', true);
@@ -133,7 +130,7 @@ class FunctionalTest extends BaseTest
         }
 
         @unlink($dstConfigPath);
-        file_put_contents($dstConfigPath, $yaml->dump($config));
+        file_put_contents($dstConfigPath, json_encode($config));
 
         return $config;
     }

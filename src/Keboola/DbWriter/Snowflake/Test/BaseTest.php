@@ -3,8 +3,6 @@ namespace Keboola\DbWriter\Snowflake\Test;
 
 use Keboola\DbWriter\Snowflake\Logger\Logger;
 use Keboola\DbWriter\Snowflake\Writer;
-use Keboola\StorageApi\Client;
-use Symfony\Component\Yaml\Yaml;
 
 class BaseTest extends \PHPUnit_Framework_TestCase
 {
@@ -19,7 +17,7 @@ class BaseTest extends \PHPUnit_Framework_TestCase
 
     protected function getConfig($driver)
     {
-        $config = Yaml::parse(file_get_contents($this->dataDir . '/' .$driver . '/config.yml'));
+        $config = json_decode(file_get_contents($this->dataDir . '/' .$driver . '/config.json'), true);
 
         $config['parameters']['data_dir'] = $this->dataDir;
         $config['parameters']['db']['user'] = $this->getEnv($driver, 'DB_USER', true);

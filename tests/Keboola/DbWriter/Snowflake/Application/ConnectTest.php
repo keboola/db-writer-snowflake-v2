@@ -5,7 +5,6 @@ use Keboola\Csv\CsvFile;
 use Keboola\DbWriter\Snowflake\Writer;
 use Keboola\DbWriter\Writer\SnowflakeTest;
 use Monolog\Handler\NullHandler;
-use Symfony\Component\Yaml\Yaml;
 
 class ConnectTest extends BaseTest
 {
@@ -126,8 +125,7 @@ class ConnectTest extends BaseTest
     private function initConfig($tablesWhere = [], $incremental = false)
     {
         $driver = SnowflakeTest::DRIVER;
-        $yaml = new Yaml();
-        $config = $yaml->parse(file_get_contents($this->dataDir . '/incremental/config.yml'));
+        $config = json_decode(file_get_contents($this->dataDir . '/incremental/config.json'), true);
 
         $config['parameters']['db']['user'] = $this->getEnv($driver, 'DB_USER', true);
         $config['parameters']['db']['#password'] = $this->getEnv($driver, 'DB_PASSWORD', true);
