@@ -110,7 +110,7 @@ class FunctionalTest extends BaseTest
             $config = $callback($config);
         }
 
-        $config['storage'] = ['input' => ['tables' => []]];
+        $config['storage'] = ['input' => ['tables' => [], 'files' => []]];
         foreach ($config['parameters']['tables'] as $key => $table) {
             $config['storage']['input']['tables'][] = [
                 'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
