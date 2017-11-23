@@ -9,7 +9,6 @@ use Keboola\DbWriter\Snowflake\Logger\Logger;
 use Keboola\DbWriter\Snowflake\StorageApi\DataLoader;
 use Keboola\DbWriter\Snowflake\Writer;
 use Keboola\StorageApi\Client;
-use Symfony\Component\Yaml\Yaml;
 
 class Connect extends Base
 {
@@ -109,11 +108,7 @@ class Connect extends Base
 
     private function getManifest($tableId, \SplFileInfo $directory)
     {
-        return (new Yaml())->parse(
-            file_get_contents(
-                $directory . '/' . $tableId . ".manifest"
-            )
-        );
+        return json_decode(file_get_contents($directory . '/' . $tableId . ".manifest"), true);
     }
 
     protected function reorderColumns($columns, $items)

@@ -138,7 +138,7 @@ class ConnectTest extends BaseTest
 
         $config['parameters']['data_dir'] = $this->dataDir . '/incremental/';
 
-        $config['storage'] = ['input' => ['tables' => []]];
+        $config['storage'] = ['input' => ['tables' => [], 'files' => []]];
         foreach ($config['parameters']['tables'] as $key => $table) {
             $config['parameters']['tables'][$key]['tableId'] = 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'];
             $config['parameters']['tables'][$key]['incremental'] = (bool) $incremental;

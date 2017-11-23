@@ -7,6 +7,7 @@ namespace Keboola\DbWriter\Snowflake\Configuration;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Keboola\InputMapping\Configuration\Table as InputTable;
+use Keboola\InputMapping\Configuration\File as InputFile;
 
 class StorageDefinition implements ConfigurationInterface
 {
@@ -31,6 +32,14 @@ class StorageDefinition implements ConfigurationInterface
         ;
 
         InputTable::configureNode($inputTable);
+
+        $inputFile = $input
+            ->children()
+                ->arrayNode("files")
+                ->prototype("array")
+        ;
+
+        InputFile::configureNode($inputFile);
 
 
         return $treeBuilder;
