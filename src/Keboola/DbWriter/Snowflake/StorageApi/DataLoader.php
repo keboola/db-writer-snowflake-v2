@@ -92,24 +92,13 @@ class DataLoader
                 $reader->downloadTables(
                     $this->storageConfig['input']['tables'],
                     $this->dataDirectory . DIRECTORY_SEPARATOR . 'in' . DIRECTORY_SEPARATOR . 'tables',
-                    $this->getStagingStorageInput()
+                    's3'
                 );
             }
         } catch (ClientException $e) {
-            throw new UserException('Cannot import data from Storage API: ' . $e->getMessage(), $e);
+            throw new UserException('Cannot import data from Storage API: ' . $e->getMessage(), 0, $e);
         } catch (InvalidInputException $e) {
-            throw new UserException($e->getMessage(), $e);
+            throw new UserException($e->getMessage(), 0, $e);
         }
-    }
-
-    private function getStagingStorageInput()
-    {
-        if (($stagingStorage = $this->componentData['staging_storage']) !== null) {
-            if (isset($stagingStorage['input'])) {
-                return $stagingStorage['input'];
-            }
-        }
-
-        return 'local';
     }
 }
