@@ -55,16 +55,27 @@ class Connect extends Base
 
     protected function runAction(array $config, array $mapping)
     {
+        $uploaded = [];
+
+        $tables = $this->filterTables($config['tables']);
+
         // prepare input mapping - download from tables from KBC)
+        $mapping = array_filter($mapping['input']['tables'], function ($table) use ($tables) {
+            $export = false;
+
+            foreach ($tables as $config) {
+                if ($config['tableId'] === $table['source']) {
+                    $export = true;
+                }
+            }
+
+            return $export;
+        });
+
         $this->loadInputData($mapping, "/tmp/mapping");
 
         // upload tables
-        $uploaded = [];
         $dataDir = new \SplFileInfo("/tmp/mapping/in/tables/");
-
-        $tables = array_filter($config['tables'], function ($table) {
-            return $table['export'] && !empty($table['items']);
-        });
 
         $writer = new Writer($config['db'], $this->logger);
         foreach ($tables as $table) {

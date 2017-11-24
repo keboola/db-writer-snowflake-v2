@@ -87,4 +87,27 @@ abstract class Base implements IApplication
     abstract protected function testConnectionAction(array $config, array $mapping);
 
     abstract protected function runAction(array $config, array $mapping);
+
+    /**
+     * Filter tables without items configuration
+     *
+     * @param array $tables
+     * @return array
+     */
+    protected function filterTables(array $tables)
+    {
+        $logger = $this->logger;
+        return array_filter($tables, function ($table) use ($logger) {
+            if (!$table['export']) {
+                return false;
+            }
+
+            if (empty($table['items'])) {
+                $logger->info(sprintf('Table "%s" skipped due empty columns mapping', $table['tableId']));
+                return false;
+            }
+
+            return true;
+        });
+    }
 }
