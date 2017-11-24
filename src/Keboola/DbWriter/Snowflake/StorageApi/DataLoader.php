@@ -96,9 +96,9 @@ class DataLoader
                 );
             }
         } catch (ClientException $e) {
-            throw new UserException('Cannot import data from Storage API: ' . $e->getMessage(), $e);
+            throw new UserException('Cannot import data from Storage API: ' . $e->getMessage(), 0, $e);
         } catch (InvalidInputException $e) {
-            throw new UserException($e->getMessage(), $e);
+            throw new UserException($e->getMessage(), 0, $e);
         }
     }
 
