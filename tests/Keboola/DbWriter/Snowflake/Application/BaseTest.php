@@ -36,7 +36,6 @@ abstract class BaseTest extends \PHPUnit_Framework_TestCase
 
         $this->logHandler = new TestHandler();
         $this->logger->pushHandler($this->logHandler);
-
     }
 
     protected function prepareSapiTables()
