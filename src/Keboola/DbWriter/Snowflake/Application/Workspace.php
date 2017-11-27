@@ -32,12 +32,10 @@ class Workspace extends Base
 
     protected function runAction(array $params, array $mapping)
     {
-        $workspaces = new Workspaces($this->sapiClient);
-
         $uploaded = [];
-        $tables = array_filter($params['tables'], function ($table) {
-            return $table['export'] && !empty($table['items']);
-        });
+
+        $workspaces = new Workspaces($this->sapiClient);
+        $tables = $this->filterTables($params['tables']);
 
         $whereValues = [];
         if (isset($mapping['input']['tables'])) {

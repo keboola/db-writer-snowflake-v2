@@ -4,6 +4,7 @@ namespace Keboola\DbWriter\Snowflake\Application;
 use Keboola\Csv\CsvFile;
 use Keboola\DbWriter\Snowflake\Logger\Logger;
 use Keboola\StorageApi\Client;
+use Monolog\Handler\TestHandler;
 
 abstract class BaseTest extends \PHPUnit_Framework_TestCase
 {
@@ -19,6 +20,11 @@ abstract class BaseTest extends \PHPUnit_Framework_TestCase
      */
     protected $logger;
 
+    /**
+     * @var TestHandler
+     */
+    protected $logHandler;
+
     public function setUp()
     {
         $this->storageApi = new Client([
@@ -27,6 +33,9 @@ abstract class BaseTest extends \PHPUnit_Framework_TestCase
         ]);
 
         $this->logger = new Logger('tests', true);
+
+        $this->logHandler = new TestHandler();
+        $this->logger->pushHandler($this->logHandler);
     }
 
     protected function prepareSapiTables()

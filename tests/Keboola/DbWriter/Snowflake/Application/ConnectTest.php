@@ -31,6 +31,30 @@ class ConnectTest extends BaseTest
         $this->assertEquals('success', $result['status']);
     }
 
+    public function testTableSkip()
+    {
+        $this->prepareSapiTables();
+
+        $config = $this->initConfigWithoutColumns();
+
+        $result = $this->application->run('run', $config);
+
+        $this->assertArrayHasKey('status', $result);
+        $this->assertArrayHasKey('uploaded', $result);
+        $this->assertEquals('success', $result['status']);
+        $this->assertEmpty($result['uploaded']);
+
+        $skipCount = 0;
+        foreach ($this->logHandler->getRecords() as $record) {
+            if (preg_match('/skipped due empty columns mapping/ui', $record['message'])) {
+                $skipCount++;
+            }
+        }
+
+        $this->assertGreaterThan(0, $skipCount);
+        $this->assertEquals(count($config['parameters']['tables']), $skipCount);
+    }
+
     public function testRun()
     {
         $this->prepareSapiTables();
@@ -140,12 +164,14 @@ class ConnectTest extends BaseTest
 
         $config['storage'] = ['input' => ['tables' => [], 'files' => []]];
         foreach ($config['parameters']['tables'] as $key => $table) {
-            $config['parameters']['tables'][$key]['tableId'] = 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'];
+            $tableId = sprintf("in.c-test-wr-db-snowflake.%s", $table['tableId']);
+
+            $config['parameters']['tables'][$key]['tableId'] = $tableId;
             $config['parameters']['tables'][$key]['incremental'] = (bool) $incremental;
 
             $mappingTable = [
-                'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
-                'destination' => $table['tableId'],
+                'source' => $tableId,
+                'destination' => sprintf("%s.csv", $tableId),
                 'columns' => array_map(
                     function ($column) {
                         return $column['name'];
@@ -163,6 +189,45 @@ class ConnectTest extends BaseTest
                 $mappingTable['where_column'] = $tablesWhere[$table['tableId']]['where_column'];
                 $mappingTable['where_values'] = $tablesWhere[$table['tableId']]['where_values'];
             }
+
+            $config['storage']['input']['tables'][] = $mappingTable;
+        }
+
+        return $config;
+    }
+
+
+    private function initConfigWithoutColumns()
+    {
+        $driver = SnowflakeTest::DRIVER;
+        $config = json_decode(file_get_contents($this->dataDir . '/incremental/config.json'), true);
+
+        $config['parameters']['db']['user'] = $this->getEnv($driver, 'DB_USER', true);
+        $config['parameters']['db']['#password'] = $this->getEnv($driver, 'DB_PASSWORD', true);
+        $config['parameters']['db']['host'] = $this->getEnv($driver, 'DB_HOST');
+        $config['parameters']['db']['port'] = $this->getEnv($driver, 'DB_PORT');
+        $config['parameters']['db']['database'] = $this->getEnv($driver, 'DB_DATABASE');
+        $config['parameters']['db']['schema'] = $this->getEnv($driver, 'DB_SCHEMA');
+        $config['parameters']['db']['warehouse'] = $this->getEnv($driver, 'DB_WAREHOUSE');
+        $config['parameters']['db']['password'] = $config['parameters']['db']['#password'];
+
+        $config['parameters']['data_dir'] = $this->dataDir . '/incremental/';
+
+        $config['storage'] = ['input' => ['tables' => [], 'files' => []]];
+        foreach ($config['parameters']['tables'] as $key => $table) {
+            $tableId = sprintf("in.c-test-wr-db-snowflake.%s", $table['tableId']);
+
+            $config['parameters']['tables'][$key]['tableId'] = $tableId;
+            $config['parameters']['tables'][$key]['incremental'] = false;
+            $config['parameters']['tables'][$key]['items'] = [];
+
+            $mappingTable = [
+                'source' => $tableId,
+                'destination' => sprintf("%s.csv", $tableId),
+                'columns' => [],
+                'where_column' => null,
+                'where_values' => [],
+            ];
 
             $config['storage']['input']['tables'][] = $mappingTable;
         }

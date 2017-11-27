@@ -28,12 +28,17 @@ class FunctionalTest extends BaseTest
 
     public function setUp()
     {
+        // init configuration
+        $this->tmpRunDir = '/tmp/' . uniqid('wr-db-snowflake_');
+        mkdir($this->tmpRunDir . '/in/tables/', 0777, true);
+        $config = $this->initConfig();
+
+        // cleanup KBC storage
         $this->storageApi = new Client([
             'token' => getenv('KBC_TOKEN'),
             'url' => getenv('KBC_URL'),
         ]);
 
-        // cleanup KBC storage
         $bucketId = 'in.c-test-wr-db-snowflake';
         if ($this->storageApi->bucketExists($bucketId)) {
             $this->storageApi->dropBucket($bucketId, ['force' => true]);
@@ -41,15 +46,13 @@ class FunctionalTest extends BaseTest
 
         $this->storageApi->createBucket('test-wr-db-snowflake', 'in');
 
-        $this->tmpRunDir = '/tmp/' . uniqid('wr-db-snowflake_');
-        mkdir($this->tmpRunDir . '/in/tables/', 0777, true);
-        $config = $this->initConfig();
-
         foreach ($config['parameters']['tables'] as $table) {
+            $tableName = trim(str_replace($bucketId, '', $table['tableId']), '.');
+
             $this->storageApi->createTableAsync(
                 $bucketId,
-                $table['tableId'],
-                new CsvFile($this->dataDir . '/in/tables/' . $table['tableId'] . '.csv')
+                $tableName,
+                new CsvFile($this->dataDir . '/in/tables/' . $tableName . '.csv')
             );
         }
     }
@@ -112,9 +115,13 @@ class FunctionalTest extends BaseTest
 
         $config['storage'] = ['input' => ['tables' => [], 'files' => []]];
         foreach ($config['parameters']['tables'] as $key => $table) {
+            $tableId = sprintf("in.c-test-wr-db-snowflake.%s", $table['tableId']);
+
+            $config['parameters']['tables'][$key]['tableId'] = $tableId;
+
             $config['storage']['input']['tables'][] = [
-                'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
-                'destination' => $table['tableId'],
+                'source' => $tableId,
+                'destination' => sprintf("%s.csv", $tableId),
                 'columns' => array_map(
                     function ($column) {
                         return $column['name'];
