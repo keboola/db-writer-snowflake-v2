@@ -60,7 +60,7 @@ class Connect extends Base
         $tables = $this->filterTables($config['tables']);
 
         // prepare input mapping - download from tables from KBC)
-        $mapping = array_filter($mapping['input']['tables'], function ($table) use ($tables) {
+        $mapping['input']['tables'] = array_filter($mapping['input']['tables'], function ($table) use ($tables) {
             $export = false;
 
             foreach ($tables as $config) {
@@ -79,7 +79,7 @@ class Connect extends Base
 
         $writer = new Writer($config['db'], $this->logger);
         foreach ($tables as $table) {
-            $manifest = $this->getManifest($table['dbName'], $dataDir);
+            $manifest = $this->getManifest($table['tableId'], $dataDir);
 
             $targetTableName = $table['dbName'];
             if ($table['incremental']) {
@@ -119,7 +119,7 @@ class Connect extends Base
 
     private function getManifest($tableId, \SplFileInfo $directory)
     {
-        return json_decode(file_get_contents($directory . '/' . $tableId . ".manifest"), true);
+        return json_decode(file_get_contents($directory . '/' . $tableId . ".csv.manifest"), true);
     }
 
     protected function reorderColumns($columns, $items)

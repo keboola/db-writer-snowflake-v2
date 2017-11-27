@@ -164,12 +164,14 @@ class ConnectTest extends BaseTest
 
         $config['storage'] = ['input' => ['tables' => [], 'files' => []]];
         foreach ($config['parameters']['tables'] as $key => $table) {
-            $config['parameters']['tables'][$key]['tableId'] = 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'];
+            $tableId = sprintf("in.c-test-wr-db-snowflake.%s", $table['tableId']);
+
+            $config['parameters']['tables'][$key]['tableId'] = $tableId;
             $config['parameters']['tables'][$key]['incremental'] = (bool) $incremental;
 
             $mappingTable = [
-                'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
-                'destination' => $table['tableId'],
+                'source' => $tableId,
+                'destination' => sprintf("%s.csv", $tableId),
                 'columns' => array_map(
                     function ($column) {
                         return $column['name'];
@@ -213,13 +215,15 @@ class ConnectTest extends BaseTest
 
         $config['storage'] = ['input' => ['tables' => [], 'files' => []]];
         foreach ($config['parameters']['tables'] as $key => $table) {
-            $config['parameters']['tables'][$key]['tableId'] = 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'];
+            $tableId = sprintf("in.c-test-wr-db-snowflake.%s", $table['tableId']);
+
+            $config['parameters']['tables'][$key]['tableId'] = $tableId;
             $config['parameters']['tables'][$key]['incremental'] = false;
             $config['parameters']['tables'][$key]['items'] = [];
 
             $mappingTable = [
-                'source' => 'in.c-test-wr-db-snowflake' . '.' . $table['tableId'],
-                'destination' => $table['tableId'],
+                'source' => $tableId,
+                'destination' => sprintf("%s.csv", $tableId),
                 'columns' => [],
                 'where_column' => null,
                 'where_values' => [],
